@@ -66,10 +66,13 @@ class RecipeParserConvert(RecipeParserDeps):
         :param ext: Extension to create the full path to check for
         :param value: `value` field for the patch-add operation
         """
-        temp_path: Final[str] = RecipeParser.append_to_path(base_path, ext)
-        if self._v1_recipe.contains_value(temp_path):
-            return
-        self._patch_and_log({"op": "add", "path": temp_path, "value": value})
+        temp_path: str = base_path
+        parts: list[str] = ext.strip("/").split("/")
+        # patch can only create paths one level at a time
+        for part in parts:
+            temp_path = RecipeParser.append_to_path(temp_path, part)
+            if not self._v1_recipe.contains_value(temp_path):
+                self._patch_and_log({"op": "add", "path": temp_path, "value": value})
 
     def _patch_move_base_path(self, base_path: str, old_ext: str, new_ext: str) -> None:
         """
@@ -507,7 +510,6 @@ class RecipeParserConvert(RecipeParserDeps):
             ]:
                 old_ire_path = RecipeParser.append_to_path(base_path, f"/build/{old_ire_name}")
                 if self._v1_recipe.contains_value(old_ire_path):
-                    self._patch_add_missing_path(base_path, "/requirements")
                     self._patch_move_new_path(
                         base_path,
                         f"/build/{old_ire_name}",
